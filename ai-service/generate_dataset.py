@@ -5,9 +5,10 @@ from datetime import datetime
 API_URL = "http://localhost:8083/payments"
 
 def fetch_data():
-    response = requests.get(API_URL)
+    response = requests.get(f"{API_URL}?size=10000")
     response.raise_for_status()
-    return response.json()
+    data = response.json()
+    return data.get("content", [])
 
 def transform(data):
     rows = []
