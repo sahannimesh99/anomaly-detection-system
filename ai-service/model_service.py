@@ -49,3 +49,22 @@ class AnomalyModelService:
 
         return prediction
 
+    def predict(self, data: dict):
+        self.check_reload()
+        input_df = pd.DataFrame([data], columns=FEATURES)
+
+        # prediction
+        prediction = self.model.predict(input_df)[0]
+
+        # confidence score
+        if hasattr(self.model, "predict_proba"):
+            probabilities = self.model.predict_proba(input_df)[0]
+            model_score = float(max(probabilities))
+            return None
+
+        else:
+            # fallback score for models without probabilities
+            model_score = 0.8 if prediction == -1 else 0.2
+
+            return prediction, round(model_score, 3)
+
