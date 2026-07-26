@@ -28,7 +28,6 @@ public class UserServiceImpl implements UserService {
     private int userCreationCount = 0;
 
     public String save(UserDto dto) {
-
         log.info("Creating user with email: {}", dto.getEmail());
 
         User user = modelMapper.map(dto, User.class);
@@ -39,7 +38,6 @@ public class UserServiceImpl implements UserService {
         userCreationCount++;
 
         if (userCreationCount >= 10) {
-
             log.warn("High user registration spike detected: {}", userCreationCount);
 
             AiRequestDto aiRequest = AiRequestDto.builder()
@@ -52,21 +50,50 @@ public class UserServiceImpl implements UserService {
 
             try {
                 AiResponseDto aiResponse = aiClient.detect(aiRequest);
-
                 log.info("AI Response (User Service): {}", aiResponse);
 
                 if (aiResponse != null && aiResponse.isAnomaly()) {
-                    log.warn(" USER ANOMALY DETECTED → Type: {}, Severity: {}",
+                    log.warn("USER ANOMALY DETECTED - Type: {}, Severity: {}",
                             aiResponse.getAnomaly_type(),
                             aiResponse.getSeverity());
                 }
-
             } catch (Exception e) {
                 log.error("AI service call failed (User Service): {}", e.getMessage());
             }
             userCreationCount = 0;
         }
         return "Saved Successfully";
+    }
+
+    public UserDto update(Long id, UserDto dto) {
+        log.info("Updating user with id: {}", id);
+        User existingUser = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
+
+        if (dto.getName() != null) {
+            existingUser.setName(dto.getName());
+        }
+        if (dto.getEmail() != null) {
+            existingUser.setEmail(dto.getEmail());
+        }
+
+        User updated = userRepository.save(existingUser);
+        return modelMapper.map(updated, UserDto.class);
+    }
+
+    public UserDto getById(Long id) {
+        log.info("Fetching user by id: {}", id);
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
+        return modelMapper.map(user, UserDto.class);
+    }
+
+    public void delete(Long id) {
+        log.info("Deleting user with id: {}", id);
+        if (!userRepository.existsById(id)) {
+            throw new RuntimeException("User not found with id: " + id);
+        }
+        userRepository.deleteById(id);
     }
 
     public List<UserDto> getAll() {
@@ -76,5 +103,4 @@ public class UserServiceImpl implements UserService {
                 .map(user -> modelMapper.map(user, UserDto.class))
                 .toList();
     }
-
 }

@@ -1,7 +1,6 @@
 package org.sahan.common;
 
 import lombok.RequiredArgsConstructor;
-
 import org.sahan.dto.AiRequestDto;
 import org.sahan.dto.AiResponseDto;
 import org.springframework.stereotype.Component;

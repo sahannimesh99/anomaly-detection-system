@@ -30,7 +30,6 @@ public class PaymentServiceImpl implements PaymentService {
     private final RestTemplate restTemplate;
 
     public PaymentDto process(PaymentDto dto) {
-
         log.info("Processing payment for orderId: {}", dto.getOrderId());
 
         boolean isFailure = random.nextInt(10) < 3;
@@ -56,33 +55,54 @@ public class PaymentServiceImpl implements PaymentService {
                 .response_time_ms(isFailure ? 800.0 : 120.0)
                 .build();
 
-        AiResponseDto aiResponse = restTemplate.postForObject(
-                "http://localhost:5000/detect",
-                aiRequest,
-                AiResponseDto.class
-        );
+        try {
+            AiResponseDto aiResponse = restTemplate.postForObject(
+                    "http://localhost:5000/detect",
+                    aiRequest,
+                    AiResponseDto.class
+            );
 
-        log.info("AI Response: {}", aiResponse);
+            log.info("AI Response: {}", aiResponse);
 
-        if (aiResponse != null) {
-            payment.setAnomaly(aiResponse.isAnomaly());
-            payment.setAnomalyType(aiResponse.getAnomaly_type());
-            payment.setSeverity(aiResponse.getSeverity());
+            if (aiResponse != null) {
+                payment.setAnomaly(aiResponse.isAnomaly());
+                payment.setAnomalyType(aiResponse.getAnomaly_type());
+                payment.setSeverity(aiResponse.getSeverity());
 
-            if (aiResponse.isAnomaly()) {
-                log.warn(" ANOMALY DETECTED → Type: {}, Severity: {}",
-                        aiResponse.getAnomaly_type(),
-                        aiResponse.getSeverity());
+                if (aiResponse.isAnomaly()) {
+                    log.warn("ANOMALY DETECTED - Type: {}, Severity: {}",
+                            aiResponse.getAnomaly_type(),
+                            aiResponse.getSeverity());
+                }
             }
+        } catch (Exception e) {
+            log.error("AI service call failed (Payment Service): {}", e.getMessage());
+            payment.setAnomaly(false);
+            payment.setAnomalyType("NORMAL");
+            payment.setSeverity("LOW");
         }
 
         Payment saved = paymentRepository.save(payment);
         return modelMapper.map(saved, PaymentDto.class);
     }
 
+    public PaymentDto getById(Long id) {
+        log.info("Fetching payment by id: {}", id);
+        Payment payment = paymentRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Payment not found with id: " + id));
+        return modelMapper.map(payment, PaymentDto.class);
+    }
+
+    public List<PaymentDto> getByOrderId(Long orderId) {
+        log.info("Fetching payments by orderId: {}", orderId);
+        return paymentRepository.findByOrderId(orderId)
+                .stream()
+                .map(payment -> modelMapper.map(payment, PaymentDto.class))
+                .toList();
+    }
+
     public List<PaymentDto> getAll() {
         log.info("Fetching all payments");
-
         return paymentRepository.findAll()
                 .stream()
                 .map(payment -> modelMapper.map(payment, PaymentDto.class))
@@ -90,7 +110,7 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     public PagedResponseDto<PaymentDto> getAll(int page, int size, String filter) {
-        log.info("Fetching payments — page: {}, size: {}, filter: {}", page, size, filter);
+        log.info("Fetching payments - page: {}, size: {}, filter: {}", page, size, filter);
 
         PageRequest pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id"));
 

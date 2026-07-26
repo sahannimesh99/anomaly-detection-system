@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class OrderDto {
+    private Long id;
     private Long userId;
     private String product;
     private Double amount;

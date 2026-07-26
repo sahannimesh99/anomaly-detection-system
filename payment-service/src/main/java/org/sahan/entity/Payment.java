@@ -21,7 +21,7 @@ public class Payment {
     private Double amount;
 
     @Column(nullable = false)
-    private String status; // SUCCESS / FAILED
+    private String status;
 
     @Column(nullable = false)
     private Boolean anomaly = false;
@@ -29,4 +29,6 @@ public class Payment {
     private String anomalyType;
 
     private String severity;
+
+    private Boolean active = true;
 }
