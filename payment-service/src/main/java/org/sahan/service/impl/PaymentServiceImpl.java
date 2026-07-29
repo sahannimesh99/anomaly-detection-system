@@ -10,6 +10,7 @@ import org.sahan.dto.PaymentDto;
 import org.sahan.entity.Payment;
 import org.sahan.repository.PaymentRepository;
 import org.sahan.service.PaymentService;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -28,6 +29,9 @@ public class PaymentServiceImpl implements PaymentService {
     private final ModelMapper modelMapper;
     private final Random random = new Random();
     private final RestTemplate restTemplate;
+
+    @Value("${ai.service.url:http://localhost:5000/detect}")
+    private String aiServiceUrl;
 
     public PaymentDto process(PaymentDto dto) {
         log.info("Processing payment for orderId: {}", dto.getOrderId());
@@ -57,7 +61,7 @@ public class PaymentServiceImpl implements PaymentService {
 
         try {
             AiResponseDto aiResponse = restTemplate.postForObject(
-                    "http://localhost:5000/detect",
+                    aiServiceUrl,
                     aiRequest,
                     AiResponseDto.class
             );
