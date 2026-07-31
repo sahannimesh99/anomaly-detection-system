@@ -1,12 +1,14 @@
 {
     "random_forest": {
-        "precision": 1.0,
-        "recall": 1.0,
-        "f1_score": 1.0
+        "precision": 0.959,
+        "recall": 0.957,
+        "f1": 0.955,
+        "f1_score": 0.955
     },
     "isolation_forest": {
-        "precision": 0.905,
-        "recall": 0.864,
-        "f1_score": 0.868
+        "precision": 0.935,
+        "recall": 0.913,
+        "f1": 0.917,
+        "f1_score": 0.917
     }
 }

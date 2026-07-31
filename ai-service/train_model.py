@@ -9,10 +9,13 @@ from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
-DATASET_PATH = "dataset.csv"
-MODEL_DIR = "models"
+BASE_DIR = os.path.dirname(__file__)
+DATASET_PATH = os.path.join(BASE_DIR, "dataset.csv")
+MODEL_DIR = os.path.join(BASE_DIR, "models")
+METRICS_PATH = os.path.join(BASE_DIR, "model_metrics.json")
 
 RF_MODEL_PATH = os.path.join(MODEL_DIR, "rf_model.pkl")
+ANOMALY_MODEL_PATH = os.path.join(MODEL_DIR, "anomaly_model.pkl")
 ISO_MODEL_PATH = os.path.join(MODEL_DIR, "iso_model.pkl")
 
 FEATURES = [
@@ -33,6 +36,11 @@ TARGET = "is_anomaly"
 def train_models():
     os.makedirs(MODEL_DIR, exist_ok=True)
 
+    if not os.path.exists(DATASET_PATH):
+        print(" Dataset missing. Generating new dataset first...")
+        from generate_dataset import run_dataset_generation
+        run_dataset_generation()
+
     # LOAD DATASET
     df = pd.read_csv(DATASET_PATH)
 
@@ -51,9 +59,6 @@ def train_models():
         random_state=42
     )
 
-    print(f"Training Records: {len(X_train)}")
-    print(f"Testing Records: {len(X_test)}")
-
     # RANDOM FOREST MODEL
     rf_model = Pipeline([
         ("scaler", StandardScaler()),
@@ -64,20 +69,11 @@ def train_models():
     ])
 
     rf_model.fit(X_train, y_train)
-
     rf_pred = rf_model.predict(X_test)
-
-    rf_report = classification_report(
-        y_test,
-        rf_pred,
-        output_dict=True
-    )
-
-    print("\n===== Random Forest Evaluation =====")
-    print(classification_report(y_test, rf_pred))
+    rf_report = classification_report(y_test, rf_pred, output_dict=True)
 
     joblib.dump(rf_model, RF_MODEL_PATH)
-
+    joblib.dump(rf_model, ANOMALY_MODEL_PATH)
 
     # ISOLATION FOREST MODEL
     iso_model = Pipeline([
@@ -89,58 +85,40 @@ def train_models():
     ])
 
     iso_model.fit(X_train)
-
     iso_pred_raw = iso_model.predict(X_test)
-
-    # Convert predictions
-    # -1 = anomaly → 1
-    #  1 = normal  → 0
-
     iso_pred = [1 if x == -1 else 0 for x in iso_pred_raw]
-
-    iso_report = classification_report(
-        y_test,
-        iso_pred,
-        output_dict=True
-    )
-
-    print("\n===== Isolation Forest Evaluation =====")
-    print(classification_report(y_test, iso_pred))
+    iso_report = classification_report(y_test, iso_pred, output_dict=True)
 
     joblib.dump(iso_model, ISO_MODEL_PATH)
 
+    rf_p = round(rf_report["weighted avg"]["precision"], 3)
+    rf_r = round(rf_report["weighted avg"]["recall"], 3)
+    rf_f1 = round(rf_report["weighted avg"]["f1-score"], 3)
+
+    iso_p = round(iso_report["weighted avg"]["precision"], 3)
+    iso_r = round(iso_report["weighted avg"]["recall"], 3)
+    iso_f1 = round(iso_report["weighted avg"]["f1-score"], 3)
+
     metrics = {
         "random_forest": {
-            "precision": round(
-                rf_report["weighted avg"]["precision"], 3
-            ),
-            "recall": round(
-                rf_report["weighted avg"]["recall"], 3
-            ),
-            "f1_score": round(
-                rf_report["weighted avg"]["f1-score"], 3
-            )
+            "precision": rf_p,
+            "recall": rf_r,
+            "f1": rf_f1,
+            "f1_score": rf_f1
         },
         "isolation_forest": {
-            "precision": round(
-                iso_report["weighted avg"]["precision"], 3
-            ),
-            "recall": round(
-                iso_report["weighted avg"]["recall"], 3
-            ),
-            "f1_score": round(
-                iso_report["weighted avg"]["f1-score"], 3
-            )
+            "precision": iso_p,
+            "recall": iso_r,
+            "f1": iso_f1,
+            "f1_score": iso_f1
         }
     }
 
-    with open("model_metrics.json", "w") as f:
+    with open(METRICS_PATH, "w") as f:
         json.dump(metrics, f, indent=4)
 
-    print("\n===== METRICS SAVED =====")
-    print(json.dumps(metrics, indent=4))
-
     print("\n Both models trained and saved successfully.")
+    return metrics
 
 
 if __name__ == "__main__":

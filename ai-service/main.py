@@ -1,4 +1,5 @@
 import json
+import os
 
 from fastapi import FastAPI
 from pydantic import BaseModel, Field
@@ -6,6 +7,8 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from decision_engine import calculate_rule_score, hybrid_decision
 from model_service import AnomalyModelService
+import generate_dataset
+import train_model
 
 app = FastAPI(
     title="Hybrid AI Anomaly Detection Service",
@@ -14,7 +17,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -52,6 +55,46 @@ def health():
         "status": "UP",
         "service": "ai-anomaly-detection-service"
     }
+
+
+@app.post("/pipeline/refresh")
+@app.get("/pipeline/refresh")
+def refresh_pipeline():
+    try:
+        # Step 1: Generate Dataset (fetches or synthetically generates)
+        record_count = generate_dataset.run_dataset_generation()
+
+        # Step 2: Train Models (Random Forest + Isolation Forest)
+        metrics = train_model.train_models()
+
+        # Step 3: Reload Model in Memory
+        model_service.check_reload()
+
+        return {
+            "status": "SUCCESS",
+            "message": "Dataset generated and AI models retrained successfully",
+            "records": record_count,
+            "metrics": metrics
+        }
+    except Exception as e:
+        print(f"Pipeline error: {e}")
+        return {
+            "status": "ERROR",
+            "message": str(e)
+        }
+
+
+@app.post("/generate-dataset")
+def generate_dataset_endpoint():
+    count = generate_dataset.run_dataset_generation()
+    return {"status": "SUCCESS", "message": f"Dataset generated with {count} records."}
+
+
+@app.post("/train-model")
+def train_model_endpoint():
+    metrics = train_model.train_models()
+    model_service.check_reload()
+    return {"status": "SUCCESS", "message": "Models trained successfully.", "metrics": metrics}
 
 
 @app.post("/detect", response_model=DetectionResponse)
@@ -101,5 +144,10 @@ def detect(request: DetectionRequest):
 
 @app.get("/metrics")
 def get_metrics():
-    with open("model_metrics.json") as f:
-        return json.load(f)
+    metrics_path = os.path.join(os.path.dirname(__file__), "model_metrics.json")
+    if os.path.exists(metrics_path):
+        with open(metrics_path) as f:
+            return json.load(f)
+
+    # Auto train if metrics file missing
+    return train_model.train_models()
