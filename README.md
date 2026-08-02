@@ -1,651 +1,298 @@
-# AI-Based Anomaly Detection Backend System
+# 🛡️ AI-Based Anomaly Detection System (Backend & AI Core)
 
 <div align="center">
 
 ![Java](https://img.shields.io/badge/Java-17-orange?style=for-the-badge&logo=openjdk)
-![Spring Boot](https://img.shields.io/badge/Spring_Boot-Microservices-brightgreen?style=for-the-badge&logo=springboot)
-![Python](https://img.shields.io/badge/Python-AI_Service-blue?style=for-the-badge&logo=python)
-![FastAPI](https://img.shields.io/badge/FastAPI-ML_API-teal?style=for-the-badge&logo=fastapi)
-![MySQL](https://img.shields.io/badge/MySQL-Database-blue?style=for-the-badge&logo=mysql)
+![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.x-brightgreen?style=for-the-badge&logo=springboot)
+![Python](https://img.shields.io/badge/Python-3.10+-blue?style=for-the-badge&logo=python)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-teal?style=for-the-badge&logo=fastapi)
+![Scikit-Learn](https://img.shields.io/badge/Scikit_Learn-1.3+-orange?style=for-the-badge&logo=scikitlearn)
+![MySQL](https://img.shields.io/badge/MySQL-8.0+-blue?style=for-the-badge&logo=mysql)
 ![Docker](https://img.shields.io/badge/Docker-Ready-blue?style=for-the-badge&logo=docker)
-![Status](https://img.shields.io/badge/Status-Research_Project-success?style=for-the-badge)
+![Status](https://img.shields.io/badge/Status-Complete_&_Verified-success?style=for-the-badge)
 
 </div>
 
 ---
 
-## 📌 Project Overview
+## 📌 Submission Checklist & Artifact Mapping
 
-The **AI-Based Anomaly Detection Backend System** is a microservices-based backend platform designed to detect abnormal behaviours, failures, and suspicious patterns in distributed web applications.
+This repository forms the complete backend, database, microservices, and AI machine learning core for the research project: **"AI-Based Anomaly Detection System for Microservices-Based Web Applications"**.
 
-This backend system is developed as part of the MSc research project:
+Below is the audit matrix mapping project components to submission requirements:
 
-> **AI-Based Anomaly Detection System for Microservices-Based Web Applications**
-
-The system contains multiple backend services responsible for user management, order processing, payment handling, API routing, dataset generation, model training, and AI-based anomaly detection.
+| Submission Requirement | Location / File Path | Description |
+|---|---|---|
+| **Complete Source Code** | `gateway-service/`, `user-service/`, `order-service/`, `payment-service/`, `ai-service/` | Full source code for all 5 microservices. |
+| **Model Training & Evaluation Scripts** | `ai-service/train_model.py` | Trains Random Forest & Isolation Forest pipelines; evaluates precision, recall, & F1 score. |
+| **Data Preprocessing & Feature Engineering** | `ai-service/generate_dataset.py`, `ai-service/decision_engine.py` | Extracts 9 feature dimensions, transforms telemetry data, and scales features via StandardScaler. |
+| **Front-end Component** | [`d:/anomaly-detection-system-portal`](file:///d:/anomaly-detection-system-portal) | React 19 + Vite dashboard portal with real-time charts, Dark/Light mode, and CRUD management. |
+| **Back-end Component** | `gateway-service/`, `user-service/`, `order-service/`, `payment-service/` | Spring Boot 3 Java microservices with RESTful APIs. |
+| **AI Detection Service** | `ai-service/main.py`, `ai-service/model_service.py` | FastAPI server managing real-time detection requests, model persistence, and automated retraining. |
+| **Database Components & Schemas** | `init-db.sql` | MySQL schema initialization scripts for `user_db`, `order_db`, and `payment_db`. |
+| **Configuration Files** | `docker-compose.yml`, `*/src/main/resources/application.yml` | Central Docker deployment config and microservice application properties. |
+| **Dependency & Package Files** | `pom.xml`, `ai-service/requirements.txt`, `package.json` | Maven dependencies for Java, PyPI packages for Python AI, and npm dependencies for React UI. |
+| **Test Evidence** | `walkthrough.md`, `ai-service/model_metrics.json` | Evaluation logs, automated test results, and browser execution recordings. |
+| **Trained Model Files** | `ai-service/models/rf_model.pkl`, `iso_model.pkl`, `anomaly_model.pkl` | Serialized scikit-learn models ready for real-time inference. |
+| **Sample Dataset & Instructions** | `ai-service/dataset.csv` | Pre-generated 9-feature payment anomaly telemetry dataset. |
+| **Deployment Configuration** | `docker-compose.yml`, `Dockerfile` in each service | One-click multi-container orchestration. |
 
 ---
 
-## 🏗️ Backend Architecture
+## 🏗️ Architecture & Component Overview
 
 ```text
-┌──────────────────────────────┐
-│        Frontend System       │
-│      React + Vite UI         │
-└───────────────┬──────────────┘
-                │
-                ▼
-┌──────────────────────────────┐
-│        Gateway Service       │
-│     API Routing Layer        │
-└───────────────┬──────────────┘
-                │
-   ┌────────────┼────────────┐
-   ▼            ▼            ▼
-┌─────────┐  ┌─────────┐  ┌──────────┐
-│  User   │  │  Order  │  │ Payment  │
-│ Service │  │ Service │  │ Service  │
-└────┬────┘  └────┬────┘  └────┬─────┘
-     │            │            │
-     ▼            ▼            ▼
-┌──────────────────────────────┐
-│        Database Layer        │
-│          MySQL DB            │
-└──────────────────────────────┘
-                ▲
-                │
-                ▼
-┌──────────────────────────────┐
-│          AI Service          │
-│ Dataset Management + Model   │
-│ Training + Anomaly Detection │
-└──────────────────────────────┘
+┌─────────────────────────────────────────────────────────┐
+│              Frontend Application Portal                │
+│         React 19 + Vite UI (Port 5173 / 80)             │
+└────────────────────────────┬────────────────────────────┘
+                             │
+                             ▼
+┌─────────────────────────────────────────────────────────┐
+│               Spring Cloud API Gateway                  │
+│                     (Port 8080)                         │
+└──────┬─────────────────────┼─────────────────────┬──────┘
+       │                     │                     │
+       ▼                     ▼                     ▼
+┌──────────────┐      ┌──────────────┐      ┌──────────────┐
+│ User Service │      │ Order Service│      │PaymentService│
+│ (Port 8081)  │      │ (Port 8082)  │      │ (Port 8083)  │
+└──────┬───────┘      └──────┬───────┘      └──────┬───────┘
+       │                     │                     │
+       ▼                     ▼                     ▼
+┌─────────────────────────────────────────────────────────┐
+│                 MySQL Relational DB                     │
+│    databases: user_db | order_db | payment_db           │
+└────────────────────────────┬────────────────────────────┘
+                             │
+                             ▼
+┌─────────────────────────────────────────────────────────┐
+│           FastAPI Hybrid AI Detection Engine            │
+│               Python Service (Port 5000)                │
+│   Random Forest Classifier + Isolation Forest Model     │
+└─────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 🧩 Microservices Included
+## 💻 System Requirements
 
-| Service | Description |
-|---|---|
-| 🌐 Gateway Service | Central API entry point and request routing layer |
-| 👤 User Service | Handles user registration, user data, and user-related operations |
-| 🛒 Order Service | Manages customer orders and order lifecycle |
-| 💳 Payment Service | Handles payment records, simulated failures, and anomaly-triggering events |
-| 🤖 AI Service | Handles dataset management, model training, and anomaly detection |
+### Software Requirements
+- **Java Development Kit (JDK)**: Java 17 or higher
+- **Build Tool**: Apache Maven 3.8+
+- **Python**: Python 3.10 or higher
+- **Node.js**: Node.js 18.x or 20.x
+- **Database**: MySQL 8.0+
+- **Containerization**: Docker Desktop 4.x+ & Docker Compose v2+
+- **Browser**: Google Chrome, Microsoft Edge, or Firefox (for UI portal)
 
----
-
-## 🌐 Gateway Service
-
-The **Gateway Service** acts as the main entry point for all client requests.
-
-### Responsibilities
-
-- Route API requests to internal services
-- Provide unified backend access
-- Hide internal microservice details from frontend
-- Support future security integration
-- Centralized API management
-
-### Example Routes
-
-```text
-/api/users/**      → User Service
-/api/orders/**     → Order Service
-/api/payments/**   → Payment Service
-/api/ai/**         → AI Service
-```
+### Hardware Requirements
+- **Processor**: Intel Core i5 / AMD Ryzen 5 or Apple Silicon (M1/M2/M3)
+- **Memory (RAM)**: 8 GB RAM minimum (16 GB recommended for running full Docker stack)
+- **Disk Space**: 5 GB available disk space
 
 ---
 
-## 👤 User Service
+## 🛠️ Languages, Libraries, and Frameworks Used
 
-The **User Service** manages user-related backend operations.
-
-### Responsibilities
-
-- Create users
-- Update user details
-- Retrieve user information
-- Delete users
-- Provide user data for order and payment flows
-
-### Main Functional Areas
-
-```text
-User Registration
-User Profile Management
-User Lookup
-User CRUD Operations
-```
+| Layer | Technology / Library | Usage |
+|---|---|---|
+| **Backend Framework** | Java 17, Spring Boot 3.x, Spring Data JPA | Business logic for User, Order, and Payment services |
+| **API Gateway** | Spring Cloud Gateway | Centralized routing, CORS deduplication, and port mapping |
+| **AI Framework** | Python 3.10+, FastAPI, Uvicorn | High-performance async ML inference API server |
+| **Machine Learning** | Scikit-learn, Pandas, NumPy, Joblib | Model training (Random Forest & Isolation Forest), dataset handling |
+| **Database** | MySQL 8.0, Hibernate ORM | Transaction data persistence |
+| **Frontend Portal** | React 19, Vite 8, Chart.js, Lucide/React-Icons | Interactive web UI, real-time analytics & theme control |
+| **Build & Tooling** | Maven, npm, Docker Compose | Dependency management and container orchestration |
 
 ---
 
-## 🛒 Order Service
+## ⚙️ Service Ports & Environment Configurations
 
-The **Order Service** manages order-related business logic.
+| Service | Port | Base Path | Role |
+|---|---|---|---|
+| **API Gateway** | `8080` | `http://localhost:8080/api` | Central API Entry Point |
+| **User Service** | `8081` | `http://localhost:8081` | User Management CRUD |
+| **Order Service** | `8082` | `http://localhost:8082` | Order Processing |
+| **Payment Service** | `8083` | `http://localhost:8083` | Transaction Processing & Anomaly Triggers |
+| **AI Service** | `5000` | `http://localhost:5000` | Machine Learning Inference & Pipeline Refresh |
+| **MySQL DB** | `3306` | `localhost:3306` | Relational Database |
+| **Frontend Portal** | `5173` | `http://localhost:5173` | React User Interface |
 
-### Responsibilities
-
-- Create new orders
-- Retrieve order details
-- Update order status
-- Track order lifecycle
-- Connect order data with payment processing
-
-### Example Order States
-
-```text
-CREATED
-PROCESSING
-COMPLETED
-FAILED
-CANCELLED
-```
+### Default Credentials
+- **Database User**: `root`
+- **Database Password**: `root`
+- **Database Names**: `user_db`, `order_db`, `payment_db`
 
 ---
 
-## 💳 Payment Service
+## 🚀 Installation & Setup Procedure
 
-The **Payment Service** is one of the core services in the anomaly detection workflow.
+### Option A: Running with Docker Compose (Recommended One-Click Method)
 
-It handles payment operations and generates behavioural data that can be analyzed by the AI service.
+1. Clone the repository and navigate to the project root:
+   ```bash
+   cd anomaly-detection-system
+   ```
 
-### Responsibilities
+2. Start all backend microservices, database, and AI service:
+   ```bash
+   docker-compose up --build
+   ```
 
-- Create payment records
-- Process payment requests
-- Simulate successful and failed payments
-- Generate abnormal payment patterns
-- Send detection requests to AI Service
-- Store anomaly-related payment information
-
-### Payment Data Example
-
-```json
-{
-  "orderId": 1001,
-  "amount": 25000.00,
-  "status": "FAILED",
-  "responseTimeMs": 3500,
-  "errorCount": 4,
-  "requestCount": 12,
-  "anomaly": true,
-  "anomalyType": "HIGH_AMOUNT_FAILURE",
-  "severity": "HIGH"
-}
-```
+3. To stop all services:
+   ```bash
+   docker-compose down
+   ```
 
 ---
 
-## 🤖 AI Service
+### Option B: Manual Local Setup (Step-by-Step)
 
-The **AI Service** is responsible for intelligent anomaly detection.
+#### Step 1: Database Setup
+1. Ensure MySQL is running on `localhost:3306`.
+2. Execute the initialization script `init-db.sql`:
+   ```bash
+   mysql -u root -p < init-db.sql
+   ```
 
-This service includes:
+#### Step 2: Build & Start Spring Boot Microservices
+Open separate terminal windows for each service:
 
-- Dataset generation
-- Dataset management
-- Feature extraction
-- Model training
-- Model evaluation
-- Anomaly prediction
-- AI detection API endpoints
+1. **User Service**:
+   ```bash
+   cd user-service
+   mvn clean install
+   mvn spring-boot:run
+   ```
+2. **Order Service**:
+   ```bash
+   cd order-service
+   mvn clean install
+   mvn spring-boot:run
+   ```
+3. **Payment Service**:
+   ```bash
+   cd payment-service
+   mvn clean install
+   mvn spring-boot:run
+   ```
+4. **API Gateway**:
+   ```bash
+   cd api-gateway
+   mvn clean install
+   mvn spring-boot:run
+   ```
 
----
+#### Step 3: Set Up & Start Python AI Service
+1. Navigate to `ai-service`:
+   ```bash
+   cd ai-service
+   ```
+2. Create and activate a virtual environment (optional but recommended):
+   ```bash
+   py -m venv .venv
+   # Windows:
+   .venv\Scripts\activate
+   # Linux/macOS:
+   source .venv/bin/activate
+   ```
+3. Install dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+4. Run dataset generation and model training (or let the service do it automatically):
+   ```bash
+   py generate_dataset.py
+   py train_model.py
+   ```
+5. Start the FastAPI server:
+   ```bash
+   uvicorn main:app --reload --host 0.0.0.0 --port 5000
+   ```
 
-## 🧠 AI Service Functional Scope
-
-### 1. Dataset Management
-
-The AI service manages datasets collected from backend microservices.
-
-Dataset records may include:
-
-```text
-amount
-status
-error_count
-request_count
-response_time_ms
-service_name
-timestamp
-anomaly_label
-anomaly_type
-severity
-```
-
----
-
-### 2. Model Training
-
-The AI service supports training machine learning models using collected system behaviour data.
-
-### Training Workflow
-
-```text
-Collect Microservice Data
-        ↓
-Clean Dataset
-        ↓
-Extract Features
-        ↓
-Train ML Model
-        ↓
-Evaluate Model
-        ↓
-Save Trained Model
-        ↓
-Use Model for Prediction
-```
-
----
-
-### 3. Anomaly Detection
-
-The AI service exposes prediction endpoints that allow other services to detect whether a request or event is abnormal.
-
-### Example Detection Request
-
-```json
-{
-  "amount": 50000,
-  "status": "FAILED",
-  "error_count": 5,
-  "request_count": 15,
-  "response_time_ms": 4200
-}
-```
-
-### Example Detection Response
-
-```json
-{
-  "anomaly": true,
-  "anomalyType": "SUSPICIOUS_PAYMENT_BEHAVIOUR",
-  "severity": "CRITICAL",
-  "confidence": 0.94
-}
-```
-
----
-
-## 🛠️ Technology Stack
-
-| Layer | Technology |
-|---|---|
-| Backend Framework | Spring Boot |
-| API Gateway | Spring Cloud Gateway |
-| AI Service | Python / FastAPI |
-| Machine Learning | Scikit-learn / Pandas / NumPy |
-| Database | MySQL |
-| API Communication | REST APIs |
-| Build Tool | Maven |
-| Containerization | Docker |
-| Testing | Postman / JUnit |
-| Architecture | Microservices |
-
----
-
-## 📂 Project Structure
-
+#### Step 4: Start Frontend Portal
+Navigate to the frontend workspace (`anomaly-detection-system-portal`):
 ```bash
-anomaly-detection-backend/
-│
-├── gateway-service/
-│   ├── src/
-│   ├── pom.xml
-│   └── README.md
-│
-├── user-service/
-│   ├── src/
-│   ├── pom.xml
-│   └── README.md
-│
-├── order-service/
-│   ├── src/
-│   ├── pom.xml
-│   └── README.md
-│
-├── payment-service/
-│   ├── src/
-│   ├── pom.xml
-│   └── README.md
-│
-├── ai-service/
-│   ├── app/
-│   ├── dataset/
-│   ├── models/
-│   ├── scripts/
-│   ├── requirements.txt
-│   └── README.md
-│
-├── docker-compose.yml
-└── README.md
+cd ../anomaly-detection-system-portal
+npm install
+npm run dev
 ```
+Open `http://localhost:5173` in your browser.
 
 ---
 
-## ⚙️ Service Ports
+## 🤖 Dataset Preparation & Model Training
 
-| Service | Port |
-|---|---|
-| Gateway Service | `8080` |
-| User Service | `8081` |
-| Order Service | `8082` |
-| Payment Service | `8083` |
-| AI Service | `5000` |
-| MySQL Database | `3306` |
+### 1. Feature Engineering
+The AI system processes 9 distinct telemetry feature dimensions:
+- `amount`: Payment transaction value
+- `status_code`: Success (`1`) or Failure (`0`)
+- `error_count`: Number of accumulated service errors
+- `request_count`: Total requests in window
+- `response_time_ms`: Latency duration
+- `transactions_last_1min`: Velocity metric
+- `avg_amount_last_5min`: Moving average transaction value
+- `failure_rate`: Ratio of failed transactions
+- `hour_of_day`: Temporal feature (`0`-`23`)
 
----
-
-## 🚀 Getting Started
-
-### Prerequisites
-
-Make sure the following tools are installed:
-
-```text
-Java 17+
-Maven
-Python 3.10+
-Node.js
-MySQL
-Docker
-Postman
-```
-
----
-
-## ▶️ Run Backend Services Manually
-
-### 1. Start Gateway Service
-
-```bash
-cd gateway-service
-mvn spring-boot:run
-```
-
----
-
-### 2. Start User Service
-
-```bash
-cd user-service
-mvn spring-boot:run
-```
-
----
-
-### 3. Start Order Service
-
-```bash
-cd order-service
-mvn spring-boot:run
-```
-
----
-
-### 4. Start Payment Service
-
-```bash
-cd payment-service
-mvn spring-boot:run
-```
-
----
-
-### 5. Start AI Service
-
+### 2. Manual Training Execution
+To trigger model training manually via CLI:
 ```bash
 cd ai-service
-pip install -r requirements.txt
-uvicorn app.main:app --reload --host 0.0.0.0 --port 5000
+py generate_dataset.py
+py train_model.py
 ```
 
----
-
-## 🐳 Run With Docker Compose
-
-```bash
-docker-compose up --build
-```
-
-Stop services:
-
-```bash
-docker-compose down
-```
+### 3. Automated GUI Retraining (One-Click)
+The system supports automated dataset generation and model retraining directly from the user interface:
+1. Open the portal at `http://localhost:5173`.
+2. Click **"⟳ Refresh Data"** or **"⚡ Retrain AI Models"**.
+3. The frontend invokes `/pipeline/refresh`, which generates fresh telemetry data, trains both **Random Forest** and **Isolation Forest** models, updates `model_metrics.json`, and reloads the active models in memory without service interruption.
 
 ---
 
-## 🌐 API Endpoint Summary
+## 🌐 API Integration Reference
 
-### Gateway
+### Gateway Unified API Endpoints (`http://localhost:8080/api`)
 
-```text
-GET  /api/health
-```
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/api/payments?page=0&size=10&filter=all` | Paginated transaction list |
+| `POST` | `/api/payments` | Process payment & execute AI anomaly check |
+| `GET` | `/api/users` | List all registered users |
+| `POST` | `/api/users` | Register a new user |
+| `GET` | `/api/orders` | List all orders |
+| `POST` | `/api/orders` | Create an order |
 
-### User Service
+### AI Service Endpoints (`http://localhost:5000`)
 
-```text
-GET     /api/users
-GET     /api/users/{id}
-POST    /api/users
-PUT     /api/users/{id}
-DELETE  /api/users/{id}
-```
-
-### Order Service
-
-```text
-GET     /api/orders
-GET     /api/orders/{id}
-POST    /api/orders
-PUT     /api/orders/{id}
-DELETE  /api/orders/{id}
-```
-
-### Payment Service
-
-```text
-GET     /api/payments
-GET     /api/payments/{id}
-POST    /api/payments
-PUT     /api/payments/{id}
-DELETE  /api/payments/{id}
-POST    /api/payments/detect
-```
-
-### AI Service
-
-```text
-GET     /health
-POST    /detect
-POST    /train
-GET     /dataset
-POST    /dataset/generate
-GET     /model/status
-```
+| Method | Endpoint | Description |
+|---|---|---|
+| `POST` | `/detect` | Hybrid AI anomaly prediction |
+| `GET` | `/metrics` | Model precision, recall, and F1 scores |
+| `POST` | `/pipeline/refresh` | Auto-generate dataset, train models & reload in memory |
+| `GET` | `/health` | Service status check |
 
 ---
 
-## 🔄 Backend Data Flow
+## ⚠️ Known Limitations & Design Considerations
 
-```text
-Frontend sends request
-        ↓
-Gateway Service receives request
-        ↓
-Request forwarded to target microservice
-        ↓
-Microservice processes business logic
-        ↓
-Payment Service sends behaviour data to AI Service
-        ↓
-AI Service predicts anomaly
-        ↓
-Prediction result saved with transaction
-        ↓
-Frontend displays anomaly result
-```
+1. **Self-Contained Fallback Mode**: If Spring Boot backend services or MySQL DB are disconnected, the frontend portal and AI service automatically utilize built-in fallback telemetry generators to maintain continuous UI evaluation without breaking.
+2. **Model Persistence**: Serialized model pickles (`.pkl` files) are saved locally under `ai-service/models/`. For production distributed environments, a centralized model registry (such as MLflow) is recommended.
+3. **Contamination Parameter**: The Isolation Forest model assumes a default contamination hyperparameter of `0.25`, which can be fine-tuned based on domain-specific anomaly frequencies.
 
 ---
 
-## 🧪 Model Training Flow
+## 🔑 External Services & API Keys
 
-```text
-Payment / Order / User Activity Data
-        ↓
-Dataset Generator
-        ↓
-Preprocessing
-        ↓
-Feature Engineering
-        ↓
-Model Training
-        ↓
-Model Evaluation
-        ↓
-Model Persistence
-        ↓
-Prediction API
-```
+- **No External Paid APIs Required**: The system is completely self-contained and operates 100% locally without external third-party subscriptions or cloud API keys.
 
 ---
 
-## 🧬 AI Features Used
-
-| Feature | Meaning |
-|---|---|
-| `amount` | Payment amount |
-| `status` | Payment status |
-| `error_count` | Number of errors |
-| `request_count` | Number of requests |
-| `response_time_ms` | Response time |
-| `service_name` | Source microservice |
-| `anomaly_label` | Normal or abnormal classification |
-
----
-
-## 📊 Anomaly Severity Levels
-
-| Severity | Description |
-|---|---|
-| LOW | Minor unusual behaviour |
-| MEDIUM | Suspicious system behaviour |
-| HIGH | Strong anomaly indicator |
-| CRITICAL | Severe abnormal activity |
-
----
-
-## 🔐 Security Considerations
-
-Future security improvements may include:
-
-- JWT authentication
-- Role-based access control
-- API Gateway security filters
-- Rate limiting
-- Service-to-service authentication
-- Secure environment variables
-- Audit logging
-
----
-
-## 📦 Environment Variables
-
-Example `.env` values:
-
-```env
-MYSQL_HOST=localhost
-MYSQL_PORT=3306
-MYSQL_DATABASE=anomaly_db
-MYSQL_USERNAME=root
-MYSQL_PASSWORD=root
-
-AI_SERVICE_URL=http://localhost:5000
-GATEWAY_PORT=8080
-USER_SERVICE_PORT=8081
-ORDER_SERVICE_PORT=8082
-PAYMENT_SERVICE_PORT=8083
-```
-
----
-
-### Test APIs Using Postman
-
-Import backend endpoints into Postman and test:
-
-```text
-User CRUD
-Order CRUD
-Payment CRUD
-AI Detection
-Dataset Generation
-Model Training
-```
-
----
-
-## 📈 Future Enhancements
-
-- Service discovery using Eureka or Consul
-- Centralized logging using ELK Stack
-- Distributed tracing using Zipkin or Jaeger
-- Kafka-based event streaming
-- Kubernetes deployment
-- Prometheus and Grafana monitoring
-- Advanced deep learning models
-- LSTM-based anomaly detection
-- Real-time WebSocket alerts
-- Automated dataset versioning
-- Model retraining pipeline
-
----
-
-## 🎓 Academic Research Context
-
-This backend system supports the MSc research project:
-
-> **AI-Based Anomaly Detection System for Microservices-Based Web Applications**
-
-The backend demonstrates how AI can be integrated into real-world distributed systems to detect failures, abnormal behaviours, suspicious transactions, and system performance anomalies.
-
----
-
-## 👨‍💻 Author
-
-<div align="center">
-
-## **Sahan Nimesha**
-
-Software Engineer | Full Stack Developer | AI Researcher
-
-</div>
-
----
-
-## 📄 Copyright
+## 📄 License & Academic Attribution
 
 ```text
 © 2026 Sahan Nimesha. All Rights Reserved.
+MSc Research Project: AI-Based Anomaly Detection System for Microservices-Based Web Applications
 ```
-
-This backend system, including source code, architecture, AI service design, dataset management workflow, documentation, and implementation concepts, is the intellectual property of **Sahan Nimesha**.
-
-Unauthorized copying, modification, distribution, commercial usage, or academic misuse without written permission is strictly prohibited.
-
----
-
-## ⭐ Final Note
-
-<div align="center">
-
-### Built by **Sahan Nimesha**
-
-### Intelligent Systems. Scalable Architecture. Real-Time Detection.
-
-</div>
