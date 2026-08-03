@@ -58,6 +58,12 @@ public class OrderServiceImpl implements OrderService {
             }
         }
 
+        if (dto.getAmount() != null && dto.getAmount() > 50000) {
+            order.setAnomaly(true);
+            order.setAnomalyType("HIGH_VALUE_TRANSACTION");
+            order.setSeverity(dto.getAmount() > 1000000 ? "CRITICAL" : "MEDIUM");
+        }
+
         Order saved = orderRepository.save(order);
         log.info("Order saved with id: {}", saved.getId());
 
