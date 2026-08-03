@@ -28,11 +28,11 @@ def transform(data):
             "amount": item.get("amount", 0),
             "status_code": 1 if item.get("status") == "SUCCESS" else 0,
             "error_count": 3 if item.get("status") == "FAILED" else 0,
-            "request_count": total_transactions,
+            "request_count": 50 if item.get("status") == "FAILED" else 15,
             "response_time_ms": 800 if item.get("status") == "FAILED" else 120,
 
             # FEATURES
-            "transactions_last_1min": total_transactions,
+            "transactions_last_1min": 25 if item.get("status") == "FAILED" else 5,
             "avg_amount_last_5min": avg_amount,
             "failure_rate": failure_rate,
             "hour_of_day": current_hour,

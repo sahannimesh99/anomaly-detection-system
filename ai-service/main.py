@@ -99,47 +99,60 @@ def train_model_endpoint():
 
 @app.post("/detect", response_model=DetectionResponse)
 def detect(request: DetectionRequest):
-    status_code = 1 if request.status.upper() == "SUCCESS" else 0
+    try:
+        status_code = 1 if request.status.upper() == "SUCCESS" else 0
 
-    model_input = {
-        "amount": request.amount,
-        "status_code": status_code,
-        "error_count": request.error_count,
-        "request_count": request.request_count,
-        "response_time_ms": request.response_time_ms
-    }
+        model_input = {
+            "amount": request.amount,
+            "status_code": status_code,
+            "error_count": request.error_count,
+            "request_count": request.request_count,
+            "response_time_ms": request.response_time_ms
+        }
 
-    model_prediction, model_score = model_service.predict(model_input)
+        model_prediction, model_score = model_service.predict(model_input)
 
-    rule_score, anomaly_type, severity = calculate_rule_score(
-        amount=request.amount,
-        status_code=status_code,
-        error_count=request.error_count,
-        request_count=request.request_count,
-        response_time_ms=request.response_time_ms
-    )
+        rule_score, anomaly_type, severity = calculate_rule_score(
+            amount=request.amount,
+            status_code=status_code,
+            error_count=request.error_count,
+            request_count=request.request_count,
+            response_time_ms=request.response_time_ms
+        )
 
-    final_score = round((model_score * 0.6) + (rule_score * 0.4), 3)
+        final_score = round((model_score * 0.6) + (rule_score * 0.4), 3)
 
-    anomaly = hybrid_decision(
-        model_prediction=model_prediction,
-        model_score=model_score,
-        rule_score=rule_score
-    )
+        anomaly = hybrid_decision(
+            model_prediction=model_prediction,
+            model_score=model_score,
+            rule_score=rule_score
+        )
 
-    if not anomaly:
-        severity = "LOW"
-        anomaly_type = "normal_behavior"
+        # Clean normal transactions: if no rules fired and amount <= 10000 with SUCCESS status, force clean
+        if rule_score == 0.0 and request.amount <= 10000 and status_code == 1 and request.error_count == 0:
+            anomaly = False
 
-    return DetectionResponse(
-        anomaly=anomaly,
-        score=final_score,
-        severity=severity,
-        anomaly_type=anomaly_type,
-        model_score=round(model_score, 3),
-        rule_score=round(rule_score, 3),
-        model_prediction="ANOMALY" if model_prediction == -1 else "NORMAL"
-    )
+        if not anomaly:
+            severity = "LOW"
+            anomaly_type = "NORMAL_BEHAVIOR"
+        elif anomaly_type == "NORMAL_BEHAVIOR" or anomaly_type == "normal_behavior":
+            anomaly_type = "UNUSUAL_PATTERN"
+
+        return DetectionResponse(
+            anomaly=bool(anomaly),
+            score=float(final_score),
+            severity=str(severity),
+            anomaly_type=str(anomaly_type),
+            model_score=float(round(model_score, 3)),
+            rule_score=float(round(rule_score, 3)),
+            model_prediction="ANOMALY" if model_prediction == -1 else "NORMAL"
+        )
+    except Exception as e:
+        import traceback
+        err_msg = traceback.format_exc()
+        print("DETECT ERROR:\n", err_msg)
+        from fastapi import HTTPException
+        raise HTTPException(status_code=500, detail=str(err_msg))
 
 
 @app.get("/metrics")
@@ -151,3 +164,8 @@ def get_metrics():
 
     # Auto train if metrics file missing
     return train_model.train_models()
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=5000)
