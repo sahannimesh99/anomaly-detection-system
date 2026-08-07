@@ -4,30 +4,30 @@ def calculate_rule_score(
         error_count: int,
         request_count: int,
         response_time_ms: float
-) -> tuple[float, str, str]:
+) -> tuple[float, list[str], str]:
+
     score = 0.0
-    anomaly_type = "NORMAL_BEHAVIOR"
-    severity = "LOW"
+    anomaly_types = []
 
     if amount > 10000:
         score += 0.25
-        anomaly_type = "HIGH_VALUE_TRANSACTION"
+        anomaly_types.append("HIGH_VALUE_TRANSACTION")
 
     if status_code == 0:
         score += 0.25
-        anomaly_type = "PAYMENT_FAILURE"
+        anomaly_types.append("PAYMENT_FAILURE")
 
     if error_count >= 3:
         score += 0.20
-        anomaly_type = "ERROR_SPIKE"
+        anomaly_types.append("ERROR_SPIKE")
 
     if response_time_ms > 700:
         score += 0.20
-        anomaly_type = "LATENCY_SPIKE"
+        anomaly_types.append("LATENCY_SPIKE")
 
     if request_count > 70:
         score += 0.10
-        anomaly_type = "TRAFFIC_SPIKE"
+        anomaly_types.append("TRAFFIC_SPIKE")
 
     if score >= 0.75:
         severity = "CRITICAL"
@@ -35,8 +35,13 @@ def calculate_rule_score(
         severity = "HIGH"
     elif score >= 0.25:
         severity = "MEDIUM"
+    else:
+        severity = "LOW"
 
-    return min(score, 1.0), anomaly_type, severity
+    if not anomaly_types:
+        anomaly_types.append("NORMAL_BEHAVIOR")
+
+    return min(score, 1.0), anomaly_types, severity
 
 
 def hybrid_decision(model_prediction: int, model_score: float, rule_score: float) -> bool:
